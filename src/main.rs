@@ -46,10 +46,10 @@ impl TryFrom<String> for SubCommand {
     type Error = ();
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        match value {
-            s if s == BUILD => Ok(SubCommand::Build),
-            s if s == RELEASE => Ok(SubCommand::Release),
-            s if s == TEST => Ok(SubCommand::Test),
+        match value.as_str() {
+            BUILD => Ok(SubCommand::Build),
+            RELEASE => Ok(SubCommand::Release),
+            TEST => Ok(SubCommand::Test),
             _ => Err(()),
         }
     }
