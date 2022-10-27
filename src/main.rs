@@ -75,7 +75,7 @@ impl Display for SubCommand {
 pub enum DevError {
     #[error("command to run {0} was not defined")]
     CommandUndefined(SubCommand),
-    #[error("dev.yml was not found")] // todo - include pwd?
+    #[error("dev.yml was not found")] // todo - include cwd?
     FileNotFound,
     #[error("dev.yml could not be parsed")]
     YmlProblem,
