@@ -10,3 +10,4 @@ anyhow = "1.0.66"
 clap = { version = "4.0.18", features = ["derive"] }
 serde = {version ="1.0.147", features = ["derive"] }
 serde_yaml = "0.9.14"
+thiserror = "1.0.37"

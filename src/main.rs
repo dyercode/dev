@@ -1,9 +1,10 @@
-use anyhow::{anyhow, Result};
+use crate::DevError::CommandUndefined;
 use clap::builder::Str;
 use serde::{Deserialize, Serialize};
-use std::io::Write;
+use std::fmt::{Display, Formatter};
+use std::fs;
 use std::process::Command;
-use std::{fs, io};
+use thiserror::Error;
 
 const BUILD: &str = "build";
 
@@ -17,14 +18,15 @@ struct Commands {
     build: Option<String>,
 }
 
-enum SubCommand {
+#[derive(Debug)]
+pub enum SubCommand {
     Build,
 }
 
 impl TryFrom<Str> for SubCommand {
     type Error = ();
 
-    fn try_from(value: Str) -> std::result::Result<Self, Self::Error> {
+    fn try_from(value: Str) -> Result<Self, Self::Error> {
         match value {
             s if s == BUILD => Ok(SubCommand::Build),
             _ => Err(()),
@@ -40,32 +42,64 @@ impl From<SubCommand> for Str {
     }
 }
 
-fn read_commands() -> Result<Commands> {
+impl TryFrom<String> for SubCommand {
+    type Error = ();
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        match value {
+            s if s == BUILD => Ok(SubCommand::Build),
+            _ => Err(()),
+        }
+    }
+}
+
+impl Display for SubCommand {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SubCommand::Build => write!(f, "{}", BUILD),
+        }
+    }
+}
+
+#[derive(Error, Debug)]
+pub enum DevError {
+    #[error("command to run {0} was not defined")]
+    CommandUndefined(SubCommand),
+    #[error("dev.yml was not found")] // todo - include pwd?
+    FileNotFound,
+    #[error("dev.yml could not be parsed")]
+    YmlProblem,
+    #[error("dev.yml could not be read")]
+    FileUnreadable,
+}
+
+fn read_commands() -> Result<Commands, DevError> {
     let file_path = "./dev.yml";
     if std::path::Path::new(file_path).exists() {
-        let raw = fs::read_to_string(file_path)?;
-        let cw: CommandsWrapper = serde_yaml::from_str(&raw)?;
+        let raw = fs::read_to_string(file_path).map_err(|_| DevError::FileUnreadable)?;
+        let cw: CommandsWrapper = serde_yaml::from_str(&raw).map_err(|_| DevError::YmlProblem)?;
         Ok(cw.commands)
     } else {
-        Err(anyhow!("dev.yml not found on path"))
+        Err(DevError::FileNotFound)
+    }
+}
+
+fn run_command(command: &str) {
+    let mut child = Command::new("sh").arg("-c").arg(&command).spawn().unwrap();
+    child.wait().unwrap();
+}
+
+fn read_command(cmd: SubCommand) -> Result<String, DevError> {
+    let commands = read_commands()?;
+    match cmd {
+        SubCommand::Build => commands.build.ok_or(CommandUndefined(SubCommand::Build)),
     }
 }
 
 fn process_command(command: SubCommand) {
-    match command {
-        SubCommand::Build => match read_commands() {
-            Ok(Commands {
-                build: Some(build_cmd),
-            }) => {
-                let output = Command::new("sh")
-                    .arg("-c")
-                    .arg(&build_cmd)
-                    .output()
-                    .unwrap_or_else(|_| panic!("Build cmd {} failed", build_cmd));
-                io::stdout().write_all(&output.stdout).unwrap();
-            }
-            _ => panic!("build command not found"),
-        },
+    match read_command(command) {
+        Ok(cmd) => run_command(&cmd),
+        Err(e) => eprintln!("{:?}", e),
     }
 }
 
