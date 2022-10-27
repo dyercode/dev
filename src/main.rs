@@ -29,17 +29,6 @@ pub enum SubCommand {
     Test,
 }
 
-impl TryFrom<Str> for SubCommand {
-    type Error = ();
-
-    fn try_from(value: Str) -> Result<Self, Self::Error> {
-        match value {
-            s if s == BUILD => Ok(SubCommand::Build),
-            _ => Err(()),
-        }
-    }
-}
-
 // todo - consider just allowing &str's with clap feature flag
 impl From<SubCommand> for Str {
     fn from(sc: SubCommand) -> Self {
@@ -52,12 +41,15 @@ impl From<SubCommand> for Str {
     }
 }
 
+// todo - this is super fragile to change, no exhaustiveness check
 impl TryFrom<String> for SubCommand {
     type Error = ();
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         match value {
             s if s == BUILD => Ok(SubCommand::Build),
+            s if s == RELEASE => Ok(SubCommand::Release),
+            s if s == TEST => Ok(SubCommand::Test),
             _ => Err(()),
         }
     }
@@ -114,14 +106,16 @@ fn read_command(cmd: SubCommand) -> Result<String, DevError> {
 fn process_command(command: SubCommand) {
     match read_command(command) {
         Ok(cmd) => run_command(&cmd),
-        Err(e) => eprintln!("{:?}", e),
+        Err(e) => eprintln!("{}", e),
     }
 }
 
 fn main() {
     let my_command = clap::Command::new("dev")
         .subcommand_required(true)
-        .subcommand(clap::Command::new(SubCommand::Build));
+        .subcommand(clap::Command::new(SubCommand::Build))
+        .subcommand(clap::Command::new(SubCommand::Release))
+        .subcommand(clap::Command::new(SubCommand::Test));
 
     if let Some((value, _)) = my_command.get_matches().subcommand() {
         match SubCommand::try_from(value.to_owned()) {
