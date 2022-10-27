@@ -9,6 +9,7 @@ use thiserror::Error;
 const BUILD: &str = "build";
 const RELEASE: &str = "release";
 const TEST: &str = "test";
+const LINT: &str = "lint";
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 struct CommandsWrapper {
@@ -20,6 +21,7 @@ struct Commands {
     build: Option<String>,
     release: Option<String>,
     test: Option<String>,
+    lint: Option<String>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -27,6 +29,7 @@ pub enum SubCommand {
     Build,
     Release,
     Test,
+    Lint,
 }
 
 // todo - consider just allowing &str's with clap feature flag
@@ -36,6 +39,7 @@ impl From<SubCommand> for Str {
             SubCommand::Build => BUILD,
             SubCommand::Release => RELEASE,
             SubCommand::Test => TEST,
+            SubCommand::Lint => LINT,
         }
         .into()
     }
@@ -50,6 +54,7 @@ impl TryFrom<String> for SubCommand {
             BUILD => Ok(SubCommand::Build),
             RELEASE => Ok(SubCommand::Release),
             TEST => Ok(SubCommand::Test),
+            LINT => Ok(SubCommand::Lint),
             _ => Err(()),
         }
     }
@@ -61,6 +66,7 @@ impl Display for SubCommand {
             SubCommand::Build => write!(f, "{}", BUILD),
             SubCommand::Release => write!(f, "{}", RELEASE),
             SubCommand::Test => write!(f, "{}", TEST),
+            SubCommand::Lint => write!(f, "{}", LINT),
         }
     }
 }
@@ -99,6 +105,7 @@ fn read_command(cmd: SubCommand) -> Result<String, DevError> {
         SubCommand::Build => commands.build,
         SubCommand::Release => commands.release,
         SubCommand::Test => commands.test,
+        SubCommand::Lint => commands.lint,
     }
     .ok_or(CommandUndefined(cmd))
 }
@@ -115,7 +122,8 @@ fn main() {
         .subcommand_required(true)
         .subcommand(clap::Command::new(SubCommand::Build))
         .subcommand(clap::Command::new(SubCommand::Release))
-        .subcommand(clap::Command::new(SubCommand::Test));
+        .subcommand(clap::Command::new(SubCommand::Test))
+        .subcommand(clap::Command::new(SubCommand::Lint));
 
     if let Some((value, _)) = my_command.get_matches().subcommand() {
         match SubCommand::try_from(value.to_owned()) {
@@ -128,6 +136,10 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /**
+    Write string and back tests first, they guarantee everything except that it gets added as a subcommand
+    */
 
     #[test]
     fn read_build() {
@@ -174,6 +186,14 @@ mod tests {
         assert_eq!(
             SubCommand::Test,
             SubCommand::Test.to_string().try_into().unwrap()
+        )
+    }
+
+    #[test]
+    fn lint_to_string_and_back() {
+        assert_eq!(
+            SubCommand::Lint,
+            SubCommand::Lint.to_string().try_into().unwrap()
         )
     }
 }
