@@ -22,7 +22,7 @@ struct Commands {
     test: Option<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum SubCommand {
     Build,
     Release,
@@ -151,5 +151,29 @@ mod tests {
         let res: CommandsWrapper =
             serde_yaml::from_str(&format!("commands:\n  test: {}\n", result)).unwrap();
         assert_eq!(res.commands.test, Some(result.to_owned()));
+    }
+
+    #[test]
+    fn build_to_string_and_back() {
+        assert_eq!(
+            SubCommand::Build,
+            SubCommand::Build.to_string().try_into().unwrap()
+        )
+    }
+
+    #[test]
+    fn release_to_string_and_back() {
+        assert_eq!(
+            SubCommand::Release,
+            SubCommand::Release.to_string().try_into().unwrap()
+        )
+    }
+
+    #[test]
+    fn test_to_string_and_back() {
+        assert_eq!(
+            SubCommand::Test,
+            SubCommand::Test.to_string().try_into().unwrap()
+        )
     }
 }
