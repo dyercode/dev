@@ -7,6 +7,8 @@ use std::process::Command;
 use thiserror::Error;
 
 const BUILD: &str = "build";
+const RELEASE: &str = "release";
+const TEST: &str = "test";
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 struct CommandsWrapper {
@@ -16,11 +18,15 @@ struct CommandsWrapper {
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 struct Commands {
     build: Option<String>,
+    release: Option<String>,
+    test: Option<String>,
 }
 
 #[derive(Debug)]
 pub enum SubCommand {
     Build,
+    Release,
+    Test,
 }
 
 impl TryFrom<Str> for SubCommand {
@@ -34,11 +40,15 @@ impl TryFrom<Str> for SubCommand {
     }
 }
 
+// todo - consider just allowing &str's with clap feature flag
 impl From<SubCommand> for Str {
     fn from(sc: SubCommand) -> Self {
         match sc {
-            SubCommand::Build => BUILD.into(),
+            SubCommand::Build => BUILD,
+            SubCommand::Release => RELEASE,
+            SubCommand::Test => TEST,
         }
+        .into()
     }
 }
 
@@ -57,6 +67,8 @@ impl Display for SubCommand {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             SubCommand::Build => write!(f, "{}", BUILD),
+            SubCommand::Release => write!(f, "{}", RELEASE),
+            SubCommand::Test => write!(f, "{}", TEST),
         }
     }
 }
@@ -92,8 +104,11 @@ fn run_command(command: &str) {
 fn read_command(cmd: SubCommand) -> Result<String, DevError> {
     let commands = read_commands()?;
     match cmd {
-        SubCommand::Build => commands.build.ok_or(CommandUndefined(SubCommand::Build)),
+        SubCommand::Build => commands.build,
+        SubCommand::Release => commands.release,
+        SubCommand::Test => commands.test,
     }
+    .ok_or(CommandUndefined(cmd))
 }
 
 fn process_command(command: SubCommand) {
@@ -108,10 +123,12 @@ fn main() {
         .subcommand_required(true)
         .subcommand(clap::Command::new(SubCommand::Build));
 
-    match my_command.get_matches().subcommand() {
-        Some((BUILD, _)) => process_command(SubCommand::Build),
-        _ => eprint!("Invalid command"),
-    }
+    if let Some((value, _)) = my_command.get_matches().subcommand() {
+        match SubCommand::try_from(value.to_owned()) {
+            Ok(cmd) => process_command(cmd),
+            Err(_) => eprint!("Invalid command '{}'", value), // todo - should be unreachable because clap won't find it
+        }
+    };
 }
 
 #[cfg(test)]
@@ -123,11 +140,22 @@ mod tests {
         let result = "real command";
         let res: CommandsWrapper =
             serde_yaml::from_str(&format!("commands:\n  build: {}\n", result)).unwrap();
-        assert_eq!(
-            res.commands,
-            Commands {
-                build: Some(result.to_owned())
-            }
-        );
+        assert_eq!(res.commands.build, Some(result.to_owned()));
+    }
+
+    #[test]
+    fn read_release() {
+        let result = "real command";
+        let res: CommandsWrapper =
+            serde_yaml::from_str(&format!("commands:\n  release: {}\n", result)).unwrap();
+        assert_eq!(res.commands.release, Some(result.to_owned()));
+    }
+
+    #[test]
+    fn read_test() {
+        let result = "real command";
+        let res: CommandsWrapper =
+            serde_yaml::from_str(&format!("commands:\n  test: {}\n", result)).unwrap();
+        assert_eq!(res.commands.test, Some(result.to_owned()));
     }
 }
