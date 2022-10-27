@@ -1,6 +1,6 @@
 use std::fmt::{Display, Formatter};
 use std::fs;
-use std::process::Command;
+use std::process::{Command, ExitCode, ExitStatus};
 
 use clap::builder::Str;
 #[cfg(test)]
@@ -102,9 +102,8 @@ fn read_commands() -> Result<Commands, DevError> {
     }
 }
 
-fn run_command(command: &str) {
-    let mut child = Command::new("sh").arg("-c").arg(&command).spawn().unwrap();
-    child.wait().unwrap();
+fn run_command(command: &str) -> std::io::Result<ExitStatus> {
+    Command::new("sh").arg("-c").arg(&command).status()
 }
 
 fn read_command(cmd: SubCommand) -> Result<String, DevError> {
@@ -119,14 +118,26 @@ fn read_command(cmd: SubCommand) -> Result<String, DevError> {
     .ok_or(DevError::CommandUndefined(cmd))
 }
 
-fn process_command(command: SubCommand) {
+fn process_command(command: SubCommand) -> ExitCode {
     match read_command(command) {
-        Ok(cmd) => run_command(&cmd),
-        Err(e) => eprintln!("{}", e),
+        Ok(cmd) => match run_command(&cmd) {
+            Ok(es) => {
+                if es.success() {
+                    ExitCode::SUCCESS
+                } else {
+                    ExitCode::FAILURE
+                }
+            }
+            Err(_) => ExitCode::FAILURE,
+        },
+        Err(e) => {
+            eprintln!("{}", e);
+            ExitCode::FAILURE
+        }
     }
 }
 
-fn main() {
+fn main() -> ExitCode {
     let my_command = clap::Command::new("dev")
         .subcommand_required(true)
         .subcommand(clap::Command::new(SubCommand::Build))
@@ -137,9 +148,15 @@ fn main() {
     if let Some((value, _)) = my_command.get_matches().subcommand() {
         match SubCommand::try_from(value.to_owned()) {
             Ok(cmd) => process_command(cmd),
-            Err(_) => eprint!("Invalid command '{}'", value), // todo - should be unreachable because clap won't find it
+            Err(_) => {
+                // todo - should be unreachable because clap won't find it
+                eprint!("Invalid command '{}'", value);
+                ExitCode::FAILURE
+            }
         }
-    };
+    } else {
+        ExitCode::FAILURE
+    }
 }
 
 #[cfg(test)]
