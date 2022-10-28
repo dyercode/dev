@@ -10,6 +10,7 @@ const BUILD: &str = "build";
 const RELEASE: &str = "release";
 const TEST: &str = "test";
 const LINT: &str = "lint";
+const CLEAN: &str = "clean";
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 struct CommandsWrapper {
@@ -22,14 +23,18 @@ struct Commands {
     release: Option<String>,
     test: Option<String>,
     lint: Option<String>,
+    clean: Option<String>,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+use proptest_derive::Arbitrary;
+
+#[derive(Debug, PartialEq, Eq, Arbitrary)]
 pub enum SubCommand {
     Build,
     Release,
     Test,
     Lint,
+    Clean,
 }
 
 // todo - consider just allowing &str's with clap feature flag
@@ -40,8 +45,9 @@ impl From<SubCommand> for Str {
             SubCommand::Release => RELEASE,
             SubCommand::Test => TEST,
             SubCommand::Lint => LINT,
+            SubCommand::Clean => CLEAN,
         }
-        .into()
+            .into()
     }
 }
 
@@ -55,6 +61,7 @@ impl TryFrom<String> for SubCommand {
             RELEASE => Ok(SubCommand::Release),
             TEST => Ok(SubCommand::Test),
             LINT => Ok(SubCommand::Lint),
+            CLEAN => Ok(SubCommand::Clean),
             _ => Err(()),
         }
     }
@@ -67,6 +74,7 @@ impl Display for SubCommand {
             SubCommand::Release => write!(f, "{}", RELEASE),
             SubCommand::Test => write!(f, "{}", TEST),
             SubCommand::Lint => write!(f, "{}", LINT),
+            SubCommand::Clean => write!(f, "{}", CLEAN),
         }
     }
 }
@@ -106,8 +114,9 @@ fn read_command(cmd: SubCommand) -> Result<String, DevError> {
         SubCommand::Release => commands.release,
         SubCommand::Test => commands.test,
         SubCommand::Lint => commands.lint,
+        SubCommand::Clean => commands.clean,
     }
-    .ok_or(CommandUndefined(cmd))
+        .ok_or(CommandUndefined(cmd))
 }
 
 fn process_command(command: SubCommand) {
@@ -135,11 +144,8 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
+    use proptest::prelude::*;
     use super::*;
-
-    /**
-    Write string and back tests first, they guarantee everything except that it gets added as a subcommand
-    */
 
     #[test]
     fn read_build() {
@@ -165,35 +171,13 @@ mod tests {
         assert_eq!(res.commands.test, Some(result.to_owned()));
     }
 
-    #[test]
-    fn build_to_string_and_back() {
-        assert_eq!(
-            SubCommand::Build,
-            SubCommand::Build.to_string().try_into().unwrap()
-        )
-    }
-
-    #[test]
-    fn release_to_string_and_back() {
-        assert_eq!(
-            SubCommand::Release,
-            SubCommand::Release.to_string().try_into().unwrap()
-        )
-    }
-
-    #[test]
-    fn test_to_string_and_back() {
-        assert_eq!(
-            SubCommand::Test,
-            SubCommand::Test.to_string().try_into().unwrap()
-        )
-    }
-
-    #[test]
-    fn lint_to_string_and_back() {
-        assert_eq!(
-            SubCommand::Lint,
-            SubCommand::Lint.to_string().try_into().unwrap()
-        )
+    proptest! {
+        #[test]
+        fn sub_command_to_string_and_back(subject in any::<SubCommand>()) {
+            assert_eq!(
+                subject.to_string().try_into(),
+                Ok(subject)
+            )
+        }
     }
 }

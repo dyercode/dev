@@ -10,3 +10,7 @@ clap = { version = "4.0.18", features = ["derive"] }
 serde = {version ="1.0.147", features = ["derive"] }
 serde_yaml = "0.9.14"
 thiserror = "1.0.37"
+
+[dev-dependencies]
+proptest = "1.0.0"
+proptest-derive = "0.3.0"
