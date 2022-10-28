@@ -1,9 +1,11 @@
-use crate::DevError::CommandUndefined;
-use clap::builder::Str;
-use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 use std::fs;
 use std::process::Command;
+
+use clap::builder::Str;
+#[cfg(test)]
+use proptest_derive::Arbitrary;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 const BUILD: &str = "build";
@@ -26,9 +28,8 @@ struct Commands {
     clean: Option<String>,
 }
 
-use proptest_derive::Arbitrary;
-
-#[derive(Debug, PartialEq, Eq, Arbitrary)]
+#[derive(Debug, PartialEq, Eq)]
+#[cfg_attr(test, derive(Arbitrary))]
 pub enum SubCommand {
     Build,
     Release,
@@ -47,11 +48,10 @@ impl From<SubCommand> for Str {
             SubCommand::Lint => LINT,
             SubCommand::Clean => CLEAN,
         }
-            .into()
+        .into()
     }
 }
 
-// todo - this is super fragile to change, no exhaustiveness check
 impl TryFrom<String> for SubCommand {
     type Error = ();
 
@@ -116,7 +116,7 @@ fn read_command(cmd: SubCommand) -> Result<String, DevError> {
         SubCommand::Lint => commands.lint,
         SubCommand::Clean => commands.clean,
     }
-        .ok_or(CommandUndefined(cmd))
+    .ok_or(DevError::CommandUndefined(cmd))
 }
 
 fn process_command(command: SubCommand) {
@@ -145,6 +145,7 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use proptest::prelude::*;
+
     use super::*;
 
     #[test]
