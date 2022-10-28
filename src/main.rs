@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter};
+use core::fmt::{Display, Formatter};
 use std::fs;
 use std::process::{Command, ExitCode, ExitStatus};
 
@@ -68,8 +68,8 @@ impl TryFrom<String> for SubCommand {
 }
 
 impl Display for SubCommand {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        match *self {
             SubCommand::Build => write!(f, "{}", BUILD),
             SubCommand::Release => write!(f, "{}", RELEASE),
             SubCommand::Test => write!(f, "{}", TEST),
