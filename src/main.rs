@@ -1,4 +1,5 @@
 use core::fmt::{Display, Formatter};
+use core::str::FromStr;
 use std::fs;
 use std::process::{Command, ExitCode, ExitStatus};
 
@@ -8,15 +9,10 @@ use proptest_derive::Arbitrary;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-const BUILD: &str = "build";
-const RELEASE: &str = "release";
-const TEST: &str = "test";
-const LINT: &str = "lint";
-const CLEAN: &str = "clean";
-
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
-struct CommandsWrapper {
+struct Root {
     commands: Commands,
+    sub_projects: Option<Vec<String>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -41,22 +37,21 @@ pub enum SubCommand {
 // todo - consider just allowing &str's with clap feature flag
 impl From<SubCommand> for Str {
     fn from(sc: SubCommand) -> Self {
-        match sc {
-            SubCommand::Build => BUILD,
-            SubCommand::Release => RELEASE,
-            SubCommand::Test => TEST,
-            SubCommand::Lint => LINT,
-            SubCommand::Clean => CLEAN,
-        }
-        .into()
+        sc.into()
     }
 }
 
-impl TryFrom<String> for SubCommand {
-    type Error = ();
+const BUILD: &str = "build";
+const RELEASE: &str = "release";
+const TEST: &str = "test";
+const LINT: &str = "lint";
+const CLEAN: &str = "clean";
 
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        match value.as_str() {
+impl FromStr for SubCommand {
+    type Err = ();
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        match value {
             BUILD => Ok(SubCommand::Build),
             RELEASE => Ok(SubCommand::Release),
             TEST => Ok(SubCommand::Test),
@@ -95,7 +90,7 @@ fn read_commands() -> Result<Commands, DevError> {
     let file_path = "./dev.yml";
     if std::path::Path::new(file_path).exists() {
         let raw = fs::read_to_string(file_path).map_err(|_| DevError::FileUnreadable)?;
-        let cw: CommandsWrapper = serde_yaml::from_str(&raw).map_err(|_| DevError::YmlProblem)?;
+        let cw: Root = serde_yaml::from_str(&raw).map_err(|_| DevError::YmlProblem)?;
         Ok(cw.commands)
     } else {
         Err(DevError::FileNotFound)
@@ -146,7 +141,7 @@ fn main() -> ExitCode {
         .subcommand(clap::Command::new(SubCommand::Lint));
 
     if let Some((value, _)) = my_command.get_matches().subcommand() {
-        match SubCommand::try_from(value.to_owned()) {
+        match SubCommand::from_str(value) {
             Ok(cmd) => process_command(cmd),
             Err(_) => {
                 // todo - should be unreachable because clap won't find it
@@ -193,7 +188,7 @@ mod tests {
         #[test]
         fn sub_command_to_string_and_back(subject in any::<SubCommand>()) {
             assert_eq!(
-                subject.to_string().try_into(),
+                SubCommand::from_str(&subject.to_string()),
                 Ok(subject)
             )
         }
