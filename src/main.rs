@@ -98,7 +98,7 @@ fn read_commands() -> Result<Commands, DevError> {
 }
 
 fn run_command(command: &str) -> std::io::Result<ExitStatus> {
-    Command::new("sh").arg("-c").arg(&command).status()
+    Command::new("sh").arg("-c").arg(command).status()
 }
 
 fn read_command(cmd: SubCommand) -> Result<String, DevError> {
@@ -163,7 +163,7 @@ mod tests {
     #[test]
     fn read_build() {
         let result = "real command";
-        let res: CommandsWrapper =
+        let res: Root =
             serde_yaml::from_str(&format!("commands:\n  build: {}\n", result)).unwrap();
         assert_eq!(res.commands.build, Some(result.to_owned()));
     }
@@ -171,7 +171,7 @@ mod tests {
     #[test]
     fn read_release() {
         let result = "real command";
-        let res: CommandsWrapper =
+        let res: Root =
             serde_yaml::from_str(&format!("commands:\n  release: {}\n", result)).unwrap();
         assert_eq!(res.commands.release, Some(result.to_owned()));
     }
@@ -179,7 +179,7 @@ mod tests {
     #[test]
     fn read_test() {
         let result = "real command";
-        let res: CommandsWrapper =
+        let res: Root =
             serde_yaml::from_str(&format!("commands:\n  test: {}\n", result)).unwrap();
         assert_eq!(res.commands.test, Some(result.to_owned()));
     }
