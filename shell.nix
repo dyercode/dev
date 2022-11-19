@@ -7,6 +7,7 @@ pkgs.mkShell {
   ];
   shellHook = ''
     export RUSTC_WRAPPER=sccache
+    export RUST_LOG=info
     rustup override set stable
   '';
 }

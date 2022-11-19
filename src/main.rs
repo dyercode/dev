@@ -1,18 +1,19 @@
+use clap::{Parser, Subcommand, ValueEnum};
 use core::fmt::{Display, Formatter};
 use core::str::FromStr;
-use std::fs;
-use std::process::{Command, ExitCode, ExitStatus};
-
-use clap::builder::Str;
 #[cfg(test)]
 use proptest_derive::Arbitrary;
 use serde::{Deserialize, Serialize};
+use std::env::set_current_dir;
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::process::{Command, ExitCode, ExitStatus};
 use thiserror::Error;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 struct Root {
-    commands: Commands,
-    sub_projects: Option<Vec<String>>,
+    commands: Option<Commands>,
+    subprojects: Option<Vec<String>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -24,7 +25,12 @@ struct Commands {
     clean: Option<String>,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Parser)]
+struct Cli {
+    command: SubCommand,
+}
+
+#[derive(Subcommand, ValueEnum, Debug, PartialEq, Eq, Clone)]
 #[cfg_attr(test, derive(Arbitrary))]
 pub enum SubCommand {
     Build,
@@ -32,13 +38,6 @@ pub enum SubCommand {
     Test,
     Lint,
     Clean,
-}
-
-// todo - consider just allowing &str's with clap feature flag
-impl From<SubCommand> for Str {
-    fn from(sc: SubCommand) -> Self {
-        sc.into()
-    }
 }
 
 const BUILD: &str = "build";
@@ -80,29 +79,52 @@ pub enum DevError {
     CommandUndefined(SubCommand),
     #[error("dev.yml was not found")] // todo - include cwd?
     FileNotFound,
-    #[error("dev.yml could not be parsed")]
-    YmlProblem,
+    #[error("dev.yml could not be parsed at: {0}")]
+    YmlProblem(String),
     #[error("dev.yml could not be read")]
     FileUnreadable,
+    #[error("process failed")]
+    ProcessFailed,
+    #[error("Current directory inaccessible")]
+    DirectoryManipulationFailed,
+    #[error("SubProject faled: `{0}`")]
+    SubProjectFailed(String),
+    #[error("SubProject not found: `{0}`")]
+    SubProjectNotFound(String),
 }
 
-fn read_commands() -> Result<Commands, DevError> {
-    let file_path = "./dev.yml";
-    if std::path::Path::new(file_path).exists() {
+fn read_yaml() -> Result<Root, DevError> {
+    let file_path = Path::new("./dev.yml");
+    if file_path.exists() {
         let raw = fs::read_to_string(file_path).map_err(|_| DevError::FileUnreadable)?;
-        let cw: Root = serde_yaml::from_str(&raw).map_err(|_| DevError::YmlProblem)?;
-        Ok(cw.commands)
+        let parsed: Result<Root, serde_yaml::Error> = serde_yaml::from_str(&raw);
+        match parsed {
+            Ok(root) => Ok(root),
+            Err(_) => {
+                let cwd = cwd();
+                Err(DevError::YmlProblem(
+                    cwd?.to_str().unwrap_or_default().to_owned(),
+                ))
+            }
+        }
     } else {
         Err(DevError::FileNotFound)
     }
 }
 
-fn run_command(command: &str) -> std::io::Result<ExitStatus> {
-    Command::new("sh").arg("-c").arg(command).status()
+fn run_command(command: &str) -> Result<ExitStatus, DevError> {
+    Command::new("sh")
+        .arg("-c")
+        .arg(command)
+        .status()
+        .map_err(|_| DevError::ProcessFailed)
 }
 
-fn read_command(cmd: SubCommand) -> Result<String, DevError> {
-    let commands = read_commands()?;
+fn run_dev_command(command: &SubCommand) -> Result<ExitStatus, std::io::Error> {
+    Command::new("dev").arg(command.to_string()).status()
+}
+
+fn read_command(cmd: SubCommand, commands: Commands) -> Result<String, DevError> {
     match cmd {
         SubCommand::Build => commands.build,
         SubCommand::Release => commands.release,
@@ -113,18 +135,78 @@ fn read_command(cmd: SubCommand) -> Result<String, DevError> {
     .ok_or(DevError::CommandUndefined(cmd))
 }
 
-fn process_command(command: SubCommand) -> ExitCode {
-    match read_command(command) {
-        Ok(cmd) => match run_command(&cmd) {
-            Ok(es) => {
-                if es.success() {
-                    ExitCode::SUCCESS
-                } else {
-                    ExitCode::FAILURE
-                }
+fn run_project_command(sub_command: SubCommand, commands: Commands) -> Result<(), DevError> {
+    log::info!("run_project_command {:?}:{:?}", &sub_command, &commands);
+    read_command(sub_command, commands).and_then(|cmd| {
+        run_command(&cmd).and_then(|es| {
+            if es.success() {
+                Ok(())
+            } else {
+                Err(DevError::ProcessFailed)
             }
-            Err(_) => ExitCode::FAILURE,
-        },
+        })
+    })
+}
+
+fn cd(p: &Path) -> Result<(), DevError> {
+    set_current_dir(p).map_err(|_| DevError::DirectoryManipulationFailed)
+}
+
+fn cwd() -> Result<PathBuf, DevError> {
+    std::env::current_dir().map_err(|_| DevError::DirectoryManipulationFailed)
+}
+
+fn run_subproject_command(
+    command: &SubCommand,
+    cwd: &Path,
+    sub_project: &str,
+) -> Result<(), DevError> {
+    log::info!("run_subproject_command {:?}:{}", &command, sub_project);
+    cd(cwd)?;
+    let sub_path = Path::new(sub_project);
+    let sub_dev_yml = sub_path.join("dev.yml"); // todo - slashes probably wrong
+    if sub_path.exists() && sub_dev_yml.exists() {
+        cd(sub_path)?;
+        run_dev_command(command)
+            .map(|_| ())
+            .map_err(|_| DevError::SubProjectFailed(sub_project.to_owned()))
+    } else {
+        Err(DevError::SubProjectNotFound(sub_project.to_owned()))
+    }
+}
+
+fn run_subprojects(command: SubCommand, sub_projects: Vec<String>) -> Result<(), DevError> {
+    let cwd: PathBuf = cwd()?;
+    for sp in sub_projects {
+        run_subproject_command(&command, &cwd, &sp)?;
+    }
+    Ok(())
+}
+
+fn process_command(command: SubCommand) -> Result<(), DevError> {
+    log::info!("processing command");
+    read_yaml().and_then(|root| {
+        log::info!("config: {:?}", &root);
+        match (root.subprojects, root.commands) {
+            (None, None) => Err(DevError::YmlProblem(format!(
+                "{:?}, no tasks or subprojects present",
+                cwd()?.to_str()
+            ))),
+            (None, Some(commands)) => run_project_command(command, commands),
+            (Some(sp), Some(commands)) if sp.is_empty() => run_project_command(command, commands),
+            (Some(sp), _) => run_subprojects(command, sp),
+        }
+    })
+}
+
+fn main() -> ExitCode {
+    env_logger::init();
+    log::info!("start prog");
+    let my_command = Cli::parse();
+
+    log::info!("god command: {:?}", &my_command.command);
+    match process_command(my_command.command) {
+        Ok(()) => ExitCode::SUCCESS,
         Err(e) => {
             eprintln!("{}", e);
             ExitCode::FAILURE
@@ -132,40 +214,17 @@ fn process_command(command: SubCommand) -> ExitCode {
     }
 }
 
-fn main() -> ExitCode {
-    let my_command = clap::Command::new("dev")
-        .subcommand_required(true)
-        .subcommand(clap::Command::new(SubCommand::Build))
-        .subcommand(clap::Command::new(SubCommand::Release))
-        .subcommand(clap::Command::new(SubCommand::Test))
-        .subcommand(clap::Command::new(SubCommand::Lint));
-
-    if let Some((value, _)) = my_command.get_matches().subcommand() {
-        match SubCommand::from_str(value) {
-            Ok(cmd) => process_command(cmd),
-            Err(_) => {
-                // todo - should be unreachable because clap won't find it
-                eprint!("Invalid command '{}'", value);
-                ExitCode::FAILURE
-            }
-        }
-    } else {
-        ExitCode::FAILURE
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use proptest::prelude::*;
+    // use proptest::prelude::*;
 
     use super::*;
 
     #[test]
     fn read_build() {
         let result = "real command";
-        let res: Root =
-            serde_yaml::from_str(&format!("commands:\n  build: {}\n", result)).unwrap();
-        assert_eq!(res.commands.build, Some(result.to_owned()));
+        let res: Root = serde_yaml::from_str(&format!("commands:\n  build: {}\n", result)).unwrap();
+        assert_eq!(res.commands.unwrap().build, Some(result.to_owned()));
     }
 
     #[test]
@@ -173,17 +232,17 @@ mod tests {
         let result = "real command";
         let res: Root =
             serde_yaml::from_str(&format!("commands:\n  release: {}\n", result)).unwrap();
-        assert_eq!(res.commands.release, Some(result.to_owned()));
+        assert_eq!(res.commands.unwrap().release, Some(result.to_owned()));
     }
 
     #[test]
     fn read_test() {
         let result = "real command";
-        let res: Root =
-            serde_yaml::from_str(&format!("commands:\n  test: {}\n", result)).unwrap();
-        assert_eq!(res.commands.test, Some(result.to_owned()));
+        let res: Root = serde_yaml::from_str(&format!("commands:\n  test: {}\n", result)).unwrap();
+        assert_eq!(res.commands.unwrap().test, Some(result.to_owned()));
     }
 
+    /*
     proptest! {
         #[test]
         fn sub_command_to_string_and_back(subject in any::<SubCommand>()) {
@@ -193,4 +252,5 @@ mod tests {
             )
         }
     }
+    */
 }
