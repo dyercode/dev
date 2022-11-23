@@ -23,6 +23,21 @@ struct Commands {
     test: Option<String>,
     lint: Option<String>,
     clean: Option<String>,
+    install: Option<String>,
+}
+
+#[cfg(test)]
+impl Commands {
+    fn by_sub_command(self, sub_command: &SubCommand) -> Option<String> {
+        match sub_command {
+            SubCommand::Build => self.build,
+            SubCommand::Release => self.release,
+            SubCommand::Test => self.test,
+            SubCommand::Lint => self.lint,
+            SubCommand::Clean => self.clean,
+            SubCommand::Install => self.install,
+        }
+    }
 }
 
 #[derive(Parser)]
@@ -38,6 +53,7 @@ pub enum SubCommand {
     Test,
     Lint,
     Clean,
+    Install,
 }
 
 const BUILD: &str = "build";
@@ -45,6 +61,7 @@ const RELEASE: &str = "release";
 const TEST: &str = "test";
 const LINT: &str = "lint";
 const CLEAN: &str = "clean";
+const INSTALL: &str = "install";
 
 impl FromStr for SubCommand {
     type Err = ();
@@ -56,6 +73,7 @@ impl FromStr for SubCommand {
             TEST => Ok(SubCommand::Test),
             LINT => Ok(SubCommand::Lint),
             CLEAN => Ok(SubCommand::Clean),
+            INSTALL => Ok(SubCommand::Install),
             _ => Err(()),
         }
     }
@@ -69,6 +87,7 @@ impl Display for SubCommand {
             SubCommand::Test => write!(f, "{}", TEST),
             SubCommand::Lint => write!(f, "{}", LINT),
             SubCommand::Clean => write!(f, "{}", CLEAN),
+            SubCommand::Install => write!(f, "{}", INSTALL),
         }
     }
 }
@@ -131,6 +150,7 @@ fn read_command(cmd: SubCommand, commands: Commands) -> Result<String, DevError>
         SubCommand::Test => commands.test,
         SubCommand::Lint => commands.lint,
         SubCommand::Clean => commands.clean,
+        SubCommand::Install => commands.install,
     }
     .ok_or(DevError::CommandUndefined(cmd))
 }
@@ -216,41 +236,24 @@ fn main() -> ExitCode {
 
 #[cfg(test)]
 mod tests {
-    // use proptest::prelude::*;
+    use proptest::prelude::*;
 
     use super::*;
 
-    #[test]
-    fn read_build() {
-        let result = "real command";
-        let res: Root = serde_yaml::from_str(&format!("commands:\n  build: {}\n", result)).unwrap();
-        assert_eq!(res.commands.unwrap().build, Some(result.to_owned()));
-    }
-
-    #[test]
-    fn read_release() {
-        let result = "real command";
-        let res: Root =
-            serde_yaml::from_str(&format!("commands:\n  release: {}\n", result)).unwrap();
-        assert_eq!(res.commands.unwrap().release, Some(result.to_owned()));
-    }
-
-    #[test]
-    fn read_test() {
-        let result = "real command";
-        let res: Root = serde_yaml::from_str(&format!("commands:\n  test: {}\n", result)).unwrap();
-        assert_eq!(res.commands.unwrap().test, Some(result.to_owned()));
-    }
-
-    /*
     proptest! {
         #[test]
         fn sub_command_to_string_and_back(subject in any::<SubCommand>()) {
             assert_eq!(
-                SubCommand::from_str(&subject.to_string()),
+                subject.to_string().parse::<SubCommand>(),
                 Ok(subject)
             )
         }
+
+        #[test]
+        fn read_sub_command_from_yaml(subject in any::<SubCommand>()) {
+            let result = "real command";
+            let res: Root = serde_yaml::from_str(&format!("commands:\n  {}: {}\n", subject, result)).unwrap();
+            assert_eq!(res.commands.unwrap().by_sub_command(&subject), Some(result.to_owned()));
+        }
     }
-    */
 }
