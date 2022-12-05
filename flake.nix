@@ -11,6 +11,7 @@
       default = pkgs.rustPlatform.buildRustPackage rec {
         pname = "dev";
         version = "ca5efee523eb71e1183e676f186ecb5b62b1bf48";
+        name = pname + "-" + version;
         inherit system;
 
         src = self;
