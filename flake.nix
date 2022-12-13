@@ -27,11 +27,11 @@
       in {
         defaultPackage = rustPlatform.buildRustPackage rec {
           pname = "dev";
-          version = "ca5efee523eb71e1183e676f186ecb5b62b1bf48";
+          version = "fc675467ff81f82410b98f98b5cc5b405873eba6";
           inherit system;
 
           src = self;
-          cargoSha256 = "sha256-oymy+YZ1/0alJNsy+yVwd1lgoHY8vKaxdWqhD4MCWbA=";
+          cargoSha256 = "sha256-3bs2LVFw1XVvdKc3T+TDxnuhRZC2FXK142F8rflCCLE=";
 
           meta = {
             description = "repeatable dev build command";
