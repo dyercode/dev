@@ -19,7 +19,7 @@ struct Root {
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 struct Commands {
     build: Option<String>,
-    release: Option<String>,
+    package: Option<String>,
     test: Option<String>,
     lint: Option<String>,
     clean: Option<String>,
@@ -31,7 +31,7 @@ impl Commands {
     fn by_sub_command(self, sub_command: &SubCommand) -> Option<String> {
         match sub_command {
             SubCommand::Build => self.build,
-            SubCommand::Release => self.release,
+            SubCommand::Package => self.package,
             SubCommand::Test => self.test,
             SubCommand::Lint => self.lint,
             SubCommand::Clean => self.clean,
@@ -49,7 +49,7 @@ struct Cli {
 #[cfg_attr(test, derive(Arbitrary))]
 pub enum SubCommand {
     Build,
-    Release,
+    Package,
     Test,
     Lint,
     Clean,
@@ -57,7 +57,7 @@ pub enum SubCommand {
 }
 
 const BUILD: &str = "build";
-const RELEASE: &str = "release";
+const PACKAGE: &str = "package";
 const TEST: &str = "test";
 const LINT: &str = "lint";
 const CLEAN: &str = "clean";
@@ -69,7 +69,7 @@ impl FromStr for SubCommand {
     fn from_str(value: &str) -> Result<Self, Self::Err> {
         match value {
             BUILD => Ok(SubCommand::Build),
-            RELEASE => Ok(SubCommand::Release),
+            PACKAGE => Ok(SubCommand::Package),
             TEST => Ok(SubCommand::Test),
             LINT => Ok(SubCommand::Lint),
             CLEAN => Ok(SubCommand::Clean),
@@ -83,7 +83,7 @@ impl Display for SubCommand {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match *self {
             SubCommand::Build => write!(f, "{}", BUILD),
-            SubCommand::Release => write!(f, "{}", RELEASE),
+            SubCommand::Package => write!(f, "{}", PACKAGE),
             SubCommand::Test => write!(f, "{}", TEST),
             SubCommand::Lint => write!(f, "{}", LINT),
             SubCommand::Clean => write!(f, "{}", CLEAN),
@@ -146,7 +146,7 @@ fn run_dev_command(command: &SubCommand) -> Result<ExitStatus, std::io::Error> {
 fn read_command(cmd: SubCommand, commands: Commands) -> Result<String, DevError> {
     match cmd {
         SubCommand::Build => commands.build,
-        SubCommand::Release => commands.release,
+        SubCommand::Package => commands.package,
         SubCommand::Test => commands.test,
         SubCommand::Lint => commands.lint,
         SubCommand::Clean => commands.clean,
