@@ -31,7 +31,7 @@
           inherit system;
 
           src = self;
-          cargoSha256 = "sha256-R/neDi1Hw+K7IkxnRUrQnRLuKRMT8m1orhd8pZNkeQo=";
+          cargoSha256 = "sha256-3IUBXzJdnDqRhyqTelXgdJMjsrVWjDxQo/qnaTW2Z4Y=";
 
           meta = {
             description = "repeatable dev build command";
