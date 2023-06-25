@@ -47,7 +47,7 @@ struct Cli {
 
 #[derive(Subcommand, ValueEnum, Debug, PartialEq, Eq, Clone)]
 #[cfg_attr(test, derive(Arbitrary))]
-pub enum SubCommand {
+enum SubCommand {
     Build,
     Package,
     Test,
@@ -93,7 +93,7 @@ impl Display for SubCommand {
 }
 
 #[derive(Error, Debug)]
-pub enum DevError {
+enum DevError {
     #[error("command to run {0} was not defined")]
     CommandUndefined(SubCommand),
     #[error("dev.yml was not found")] // todo - include cwd?
