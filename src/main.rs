@@ -26,7 +26,6 @@ struct Commands {
     install: Option<String>,
 }
 
-#[cfg(test)]
 impl Commands {
     fn by_sub_command(self, sub_command: &SubCommand) -> Option<String> {
         match sub_command {
@@ -144,15 +143,9 @@ fn run_dev_command(command: &SubCommand) -> Result<ExitStatus, std::io::Error> {
 }
 
 fn read_command(cmd: SubCommand, commands: Commands) -> Result<String, DevError> {
-    match cmd {
-        SubCommand::Build => commands.build,
-        SubCommand::Package => commands.package,
-        SubCommand::Test => commands.test,
-        SubCommand::Lint => commands.lint,
-        SubCommand::Clean => commands.clean,
-        SubCommand::Install => commands.install,
-    }
-    .ok_or(DevError::CommandUndefined(cmd))
+    commands
+        .by_sub_command(&cmd)
+        .ok_or(DevError::CommandUndefined(cmd))
 }
 
 fn run_project_command(sub_command: SubCommand, commands: Commands) -> Result<(), DevError> {
