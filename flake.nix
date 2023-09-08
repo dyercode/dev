@@ -25,13 +25,13 @@
         };
         pkgs = import nixpkgs { inherit system overlays; };
       in {
-        defaultPackage = rustPlatform.buildRustPackage rec {
+        packages.default = rustPlatform.buildRustPackage rec {
           pname = "dev";
           version = "cfc2733e3a6e7aa2f11cd6b3b16cff39e9da692e";
           inherit system;
 
           src = self;
-          cargoSha256 = "sha256-xRZ0bQEd/m3+rsPPOO/+Eb359xUCAqbTWufwInQ4a84=";
+          cargoSha256 = "sha256-kWb1pk3ulWZKo3S51Nl0dBPfJB4qZ2V2xHQEpdnTzmA=";
 
           meta = {
             description = "repeatable dev build command";
