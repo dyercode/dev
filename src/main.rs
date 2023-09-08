@@ -248,5 +248,11 @@ mod tests {
             let res: Root = serde_yaml::from_str(&format!("commands:\n  {}: {}\n", subject, result)).unwrap();
             assert_eq!(res.commands.unwrap().by_sub_command(&subject), Some(result.to_owned()));
         }
+
+    }
+
+    #[test]
+    fn sub_command_errors_when_unknown_string() {
+        assert_eq!("fish".parse::<SubCommand>(), Err(()));
     }
 }
