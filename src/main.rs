@@ -28,7 +28,7 @@ struct Commands {
 
 impl Commands {
     fn by_sub_command(self, sub_command: &SubCommand) -> Option<String> {
-        match sub_command {
+        match *sub_command {
             SubCommand::Build => self.build,
             SubCommand::Package => self.package,
             SubCommand::Test => self.test,
