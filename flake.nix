@@ -1,48 +1,131 @@
 {
-  description = "A very basic flake";
+  description = "Build a cargo project";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+
+    dev.url = "github:dyercode/dev";
+
+    crane = {
+      url = "github:ipetkov/crane";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    fenix = {
+      url = "github:nix-community/fenix";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.rust-analyzer-src.follows = "";
+    };
+
     flake-utils.url = "github:numtide/flake-utils";
-    rust-overlay.url = "github:oxalica/rust-overlay";
+
+    advisory-db = {
+      url = "github:rustsec/advisory-db";
+      flake = false;
+    };
   };
 
-  outputs = { self, nixpkgs, flake-utils, rust-overlay }:
+  outputs = { self, nixpkgs, crane, fenix, flake-utils, advisory-db, dev, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        overlays = [
-          (import rust-overlay)
-          (self: super: {
-            rustToolchain =
-              super.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
-          })
-        ];
+        pkgs = import nixpkgs { inherit system; };
 
-        rustVersion = pkgs.rust-bin.stable.latest.default;
-        rustPlatform = pkgs.makeRustPlatform {
-          cargo = rustVersion;
-          rustc = rustVersion;
+        inherit (pkgs) lib;
+
+        craneLib = crane.lib.${system};
+        src = craneLib.cleanCargoSource (craneLib.path ./.);
+
+        # Common arguments can be set here to avoid repeating them later
+        commonArgs = {
+          inherit src;
+
+          buildInputs = [
+            # Add additional build inputs here
+          ] ++ lib.optionals pkgs.stdenv.isDarwin [
+            # Additional darwin specific inputs can be set here
+            pkgs.libiconv
+          ];
+
+          # Additional environment variables can be set directly
+          # MY_CUSTOM_VAR = "some value";
         };
-        pkgs = import nixpkgs { inherit system overlays; };
+
+        craneLibLLvmTools = craneLib.overrideToolchain
+          (fenix.packages.${system}.complete.withComponents [
+            "cargo"
+            "llvm-tools"
+            "rustc"
+          ]);
+
+        # Build *just* the cargo dependencies, so we can reuse
+        # all of that work (e.g. via cachix) when running in CI
+        cargoArtifacts = craneLib.buildDepsOnly commonArgs;
+
+        # Build the actual crate itself, reusing the dependency
+        # artifacts from above.
+        my-crate =
+          craneLib.buildPackage (commonArgs // { inherit cargoArtifacts; });
       in {
-        packages.default = rustPlatform.buildRustPackage rec {
-          pname = "dev";
-          version = "cfc2733e3a6e7aa2f11cd6b3b16cff39e9da692e";
-          inherit system;
+        checks = {
+          # Build the crate as part of `nix flake check` for convenience
+          inherit my-crate;
 
-          src = self;
-          cargoSha256 = "sha256-kWb1pk3ulWZKo3S51Nl0dBPfJB4qZ2V2xHQEpdnTzmA=";
+          # Run clippy (and deny all warnings) on the crate source,
+          # again, resuing the dependency artifacts from above.
+          #
+          # Note that this is done as a separate derivation so that
+          # we can block the CI if there are issues here, but not
+          # prevent downstream consumers from building our crate by itself.
+          my-crate-clippy = craneLib.cargoClippy (commonArgs // {
+            inherit cargoArtifacts;
+            cargoClippyExtraArgs = "--all-targets -- --deny warnings";
+          });
 
-          meta = {
-            description = "repeatable dev build command";
-            homepage = "https://github.com/dyercode/dev";
-            license = pkgs.lib.licenses.gpl3;
-            maintainers = [ ];
-          };
+          my-crate-doc =
+            craneLib.cargoDoc (commonArgs // { inherit cargoArtifacts; });
+
+          # Check formatting
+          my-crate-fmt = craneLib.cargoFmt { inherit src; };
+
+          # Audit dependencies
+          my-crate-audit = craneLib.cargoAudit { inherit src advisory-db; };
+
+          # Run tests with cargo-nextest
+          # Consider setting `doCheck = false` on `my-crate` if you do not want
+          # the tests to run twice
+          my-crate-nextest = craneLib.cargoNextest (commonArgs // {
+            inherit cargoArtifacts;
+            partitions = 1;
+            partitionType = "count";
+          });
+        } // lib.optionalAttrs (system == "x86_64-linux") {
+          # NB: cargo-tarpaulin only supports x86_64 systems
+          # Check code coverage (note: this will not upload coverage anywhere)
+          my-crate-coverage =
+            craneLib.cargoTarpaulin (commonArgs // { inherit cargoArtifacts; });
         };
 
-        devShells.default = pkgs.mkShell {
-          nativeBuildInputs = with pkgs; [ rustToolchain sccache ];
+        packages = {
+          default = my-crate;
+          my-crate-llvm-coverage = craneLibLLvmTools.cargoLlvmCov
+            (commonArgs // { inherit cargoArtifacts; });
+        };
+
+        apps.default = flake-utils.lib.mkApp { drv = my-crate; };
+
+        devShells.default = craneLib.devShell {
+          # Inherit inputs from checks.
+          checks = self.checks.${system};
+
+          # Additional dev-shell environment variables can be set directly
+          # MY_CUSTOM_DEVELOPMENT_VAR = "something else";
+
+          # Extra inputs can be added here; cargo and rustc are provided by default.
+          packages = [
+            pkgs.sccache
+            dev.packages.${system}.default
+            # pkgs.ripgrep
+          ];
 
           shellHook = ''
             export RUSTC_WRAPPER=sccache
