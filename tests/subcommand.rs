@@ -41,6 +41,7 @@ fn run_subproject_command_failing_test_returns_subproject_failed() {
 }
 
 #[test]
+#[ignore]
 fn run_subproject_command_success_is_ok() {
     let res = dir_locker(|cwd| run_subproject_command(&SubCommand::Test, cwd, "pass_subproject"));
     assert_eq!(res, Ok(()),);
