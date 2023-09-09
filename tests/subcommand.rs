@@ -8,3 +8,16 @@ fn run_subproject_command_nonexistent_directory_returns_subproject_not_found() {
         DevError::SubProjectNotFound("fake_dir".to_owned())
     );
 }
+
+#[test]
+fn run_subproject_command_failing_test_returns_subproject_failed() {
+    let res = run_subproject_command(
+        &SubCommand::Test,
+        &cwd().unwrap(),
+        "tests/failing_subproject",
+    );
+    assert_eq!(
+        res.unwrap_err(),
+        DevError::SubProjectFailed("tests/failing_subproject".to_owned())
+    );
+}

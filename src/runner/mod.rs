@@ -27,9 +27,11 @@ pub fn run_subproject_command(
     let sub_dev_yml = sub_path.join("dev.yml");
     if sub_path.exists() && sub_dev_yml.exists() {
         cd(sub_path)?;
-        run_dev_command(command)
-            .map(|_| ())
-            .map_err(|_| DevError::SubProjectFailed(sub_project.to_owned()))
+        match run_dev_command(command) {
+            Ok(status) if status.success() => Ok(()),
+            Ok(_) => Err(DevError::SubProjectFailed(sub_project.to_owned())),
+            Err(_) => Err(DevError::SubProjectFailed(sub_project.to_owned()))
+        }
     } else {
         Err(DevError::SubProjectNotFound(sub_project.to_owned()))
     }
