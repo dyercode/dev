@@ -30,7 +30,7 @@ pub fn run_subproject_command(
         match run_dev_command(command) {
             Ok(status) if status.success() => Ok(()),
             Ok(_) => Err(DevError::SubProjectFailed(sub_project.to_owned())),
-            Err(_) => Err(DevError::SubProjectFailed(sub_project.to_owned()))
+            Err(_) => Err(DevError::SubProjectFailed(sub_project.to_owned())),
         }
     } else {
         Err(DevError::SubProjectNotFound(sub_project.to_owned()))

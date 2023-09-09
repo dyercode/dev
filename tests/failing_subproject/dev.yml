@@ -1,1 +1,2 @@
 commands:
+  test: exit 1

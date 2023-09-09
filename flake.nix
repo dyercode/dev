@@ -33,11 +33,18 @@
         inherit (pkgs) lib;
 
         craneLib = crane.lib.${system};
+        ymlFilter = path: _type: builtins.match ".*yml$" path != null;
+        ymlOrCargo = path: type:
+          (ymlFilter path type) || (craneLib.filterCargoSources path type);
         src = craneLib.cleanCargoSource (craneLib.path ./.);
 
         # Common arguments can be set here to avoid repeating them later
         commonArgs = {
-          inherit src;
+          # inherit src;
+          src = lib.cleanSourceWith {
+            src = craneLib.path ./.; # The original, unfiltered source
+            filter = ymlOrCargo;
+          };
 
           buildInputs = [
             # Add additional build inputs here
@@ -121,11 +128,7 @@
           # MY_CUSTOM_DEVELOPMENT_VAR = "something else";
 
           # Extra inputs can be added here; cargo and rustc are provided by default.
-          packages = [
-            pkgs.sccache
-            dev.packages.${system}.default
-            # pkgs.ripgrep
-          ];
+          packages = [ pkgs.sccache dev.packages.${system}.default ];
 
           shellHook = ''
             export RUSTC_WRAPPER=sccache
