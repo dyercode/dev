@@ -1,0 +1,2 @@
+commands:
+  test: exit 0

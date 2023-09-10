@@ -1,10 +1,13 @@
-use std::{path::PathBuf, sync::Mutex};
+use std::{
+    path::{Path, PathBuf},
+    sync::Mutex,
+};
 
 use dev::{
     command::SubCommand,
     err::DevError,
     filesystem::{cd, cwd},
-    runner::run_subproject_command,
+    runner::{process_command, run_subproject_command},
 };
 
 static WD_LOCKER: Mutex<&str> = Mutex::new("");
@@ -45,4 +48,13 @@ fn run_subproject_command_success_is_ok() {
     let res =
         dir_locker(|cwd| run_subproject_command(&SubCommand::Test, cwd, "tests/pass_subproject"));
     assert_eq!(res, Ok(()),);
+}
+
+#[test]
+fn process_command_can_run_subproject_commmands_success_is_ok() {
+    let res = dir_locker(|_| {
+        cd(Path::new("tests/with_subprojects")).unwrap();
+        process_command(&SubCommand::Test)
+    });
+    assert_eq!(res, Ok(()));
 }

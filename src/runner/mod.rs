@@ -32,7 +32,7 @@ pub fn run_project_command(sub_command: &SubCommand, commands: Commands) -> Resu
     })
 }
 
-pub fn run_subprojects(command: &SubCommand, sub_projects: Vec<String>) -> Result<(), DevError> {
+fn run_subprojects(command: &SubCommand, sub_projects: Vec<String>) -> Result<(), DevError> {
     let cwd: PathBuf = cwd()?;
     for sp in sub_projects {
         run_subproject_command(command, &cwd, &sp)?;
