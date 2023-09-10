@@ -32,17 +32,17 @@ fn run_subproject_command_nonexistent_directory_returns_subproject_not_found() {
 
 #[test]
 fn run_subproject_command_failing_test_returns_subproject_failed() {
-    let res =
-        dir_locker(|cwd| run_subproject_command(&SubCommand::Test, cwd, "failing_subproject"));
+    let dev_location = "tests/failing_subproject";
+    let res = dir_locker(|cwd| run_subproject_command(&SubCommand::Test, cwd, dev_location));
     assert_eq!(
         res.unwrap_err(),
-        DevError::SubProjectFailed("failing_subproject".to_owned())
+        DevError::SubProjectFailed(dev_location.to_owned())
     );
 }
 
 #[test]
-#[ignore]
 fn run_subproject_command_success_is_ok() {
-    let res = dir_locker(|cwd| run_subproject_command(&SubCommand::Test, cwd, "pass_subproject"));
+    let res =
+        dir_locker(|cwd| run_subproject_command(&SubCommand::Test, cwd, "tests/pass_subproject"));
     assert_eq!(res, Ok(()),);
 }
