@@ -46,8 +46,11 @@ pub fn process_command(command: &SubCommand) -> Result<(), DevError> {
         log::info!("config: {:?}", &root);
         match (root.subprojects, root.commands) {
             (None, None) => Err(DevError::YmlProblem(format!(
-                "{:?}, no tasks or subprojects present",
-                cwd()?.to_str()
+                "{}, no tasks or subprojects present",
+                cwd()
+                    .ok()
+                    .and_then(|path| path.to_str().map(|p| p.to_owned()))
+                    .unwrap_or("no directory found".to_string())
             ))),
             (None, Some(commands)) => run_project_command(command, commands),
             (Some(sp), Some(commands)) if sp.is_empty() => run_project_command(command, commands),

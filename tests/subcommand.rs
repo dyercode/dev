@@ -58,3 +58,20 @@ fn process_command_can_run_subproject_commmands_success_is_ok() {
     });
     assert_eq!(res, Ok(()));
 }
+
+#[test]
+fn process_command_yml_error_when_no_commands_or_subprojects() {
+    let mut dir: String = "".to_string();
+    let res = dir_locker(|_| {
+        cd(Path::new("tests/empty_dev")).unwrap();
+        dir = cwd().unwrap().to_str().unwrap().to_owned();
+        process_command(&SubCommand::Test)
+    });
+    assert_eq!(
+        res,
+        Err(DevError::YmlProblem(format!(
+            "{}, no tasks or subprojects present",
+            dir
+        )))
+    );
+}
