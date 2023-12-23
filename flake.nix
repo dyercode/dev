@@ -1,10 +1,8 @@
 {
-  description = "Build a cargo project";
+  description = "simple command/script runner for development";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-
-    dev.url = "github:dyercode/dev";
 
     crane = {
       url = "github:ipetkov/crane";
@@ -25,7 +23,7 @@
     };
   };
 
-  outputs = { self, nixpkgs, crane, fenix, flake-utils, advisory-db, dev, ... }:
+  outputs = { self, nixpkgs, crane, fenix, flake-utils, advisory-db, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
@@ -128,7 +126,7 @@
           # MY_CUSTOM_DEVELOPMENT_VAR = "something else";
 
           # Extra inputs can be added here; cargo and rustc are provided by default.
-          packages = [ pkgs.sccache dev.packages.${system}.default ];
+          packages = [ pkgs.sccache self.packages.${system}.default ];
 
           shellHook = ''
             export RUSTC_WRAPPER=sccache

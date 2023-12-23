@@ -20,7 +20,7 @@ pub struct Commands {
     build: Option<String>,
     package: Option<String>,
     test: Option<String>,
-    lint: Option<String>,
+    check: Option<String>,
     clean: Option<String>,
     install: Option<String>,
 }
@@ -31,7 +31,7 @@ impl Commands {
             SubCommand::Build => self.build,
             SubCommand::Package => self.package,
             SubCommand::Test => self.test,
-            SubCommand::Lint => self.lint,
+            SubCommand::Check => self.check,
             SubCommand::Clean => self.clean,
             SubCommand::Install => self.install,
         }
@@ -44,7 +44,7 @@ pub enum SubCommand {
     Build,
     Package,
     Test,
-    Lint,
+    Check,
     Clean,
     Install,
 }
@@ -52,7 +52,7 @@ pub enum SubCommand {
 const BUILD: &str = "build";
 const PACKAGE: &str = "package";
 const TEST: &str = "test";
-const LINT: &str = "lint";
+const CHECK: &str = "check";
 const CLEAN: &str = "clean";
 const INSTALL: &str = "install";
 
@@ -64,7 +64,7 @@ impl FromStr for SubCommand {
             BUILD => Ok(SubCommand::Build),
             PACKAGE => Ok(SubCommand::Package),
             TEST => Ok(SubCommand::Test),
-            LINT => Ok(SubCommand::Lint),
+            CHECK => Ok(SubCommand::Check),
             CLEAN => Ok(SubCommand::Clean),
             INSTALL => Ok(SubCommand::Install),
             _ => Err(()),
@@ -78,7 +78,7 @@ impl Display for SubCommand {
             SubCommand::Build => write!(f, "{}", BUILD),
             SubCommand::Package => write!(f, "{}", PACKAGE),
             SubCommand::Test => write!(f, "{}", TEST),
-            SubCommand::Lint => write!(f, "{}", LINT),
+            SubCommand::Check => write!(f, "{}", CHECK),
             SubCommand::Clean => write!(f, "{}", CLEAN),
             SubCommand::Install => write!(f, "{}", INSTALL),
         }
