@@ -16,7 +16,7 @@ pub enum DevError {
     ProcessFailed,
     #[error("Current directory inaccessible")]
     DirectoryManipulationFailed,
-    #[error("SubProject faled: `{0}`")]
+    #[error("SubProject failed: `{0}`")]
     SubProjectFailed(String),
     #[error("SubProject not found: `{0}`")]
     SubProjectNotFound(String),
