@@ -126,7 +126,8 @@
           # MY_CUSTOM_DEVELOPMENT_VAR = "something else";
 
           # Extra inputs can be added here; cargo and rustc are provided by default.
-          packages = [ pkgs.sccache self.packages.${system}.default ];
+          packages =
+            [ pkgs.sccache self.packages.${system}.default pkgs.cargo-edit ];
 
           shellHook = ''
             export RUSTC_WRAPPER=sccache
