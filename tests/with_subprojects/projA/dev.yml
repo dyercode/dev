@@ -1,2 +1,2 @@
 commands:
-  test: exit 0
+  check: exit 0

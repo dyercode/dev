@@ -19,10 +19,10 @@ pub struct Root {
 pub struct Commands {
     build: Option<String>,
     package: Option<String>,
-    test: Option<String>,
     check: Option<String>,
     clean: Option<String>,
     install: Option<String>,
+    run: Option<String>,
 }
 
 impl Commands {
@@ -30,10 +30,10 @@ impl Commands {
         match *sub_command {
             SubCommand::Build => self.build,
             SubCommand::Package => self.package,
-            SubCommand::Test => self.test,
             SubCommand::Check => self.check,
             SubCommand::Clean => self.clean,
             SubCommand::Install => self.install,
+            SubCommand::Run => self.run,
         }
     }
 }
@@ -43,18 +43,18 @@ impl Commands {
 pub enum SubCommand {
     Build,
     Package,
-    Test,
     Check,
     Clean,
     Install,
+    Run,
 }
 
 const BUILD: &str = "build";
 const PACKAGE: &str = "package";
-const TEST: &str = "test";
 const CHECK: &str = "check";
 const CLEAN: &str = "clean";
 const INSTALL: &str = "install";
+const RUN: &str = "run";
 
 impl FromStr for SubCommand {
     type Err = ();
@@ -63,10 +63,10 @@ impl FromStr for SubCommand {
         match value {
             BUILD => Ok(SubCommand::Build),
             PACKAGE => Ok(SubCommand::Package),
-            TEST => Ok(SubCommand::Test),
             CHECK => Ok(SubCommand::Check),
             CLEAN => Ok(SubCommand::Clean),
             INSTALL => Ok(SubCommand::Install),
+            RUN => Ok(SubCommand::Run),
             _ => Err(()),
         }
     }
@@ -77,10 +77,10 @@ impl Display for SubCommand {
         match *self {
             SubCommand::Build => write!(f, "{}", BUILD),
             SubCommand::Package => write!(f, "{}", PACKAGE),
-            SubCommand::Test => write!(f, "{}", TEST),
             SubCommand::Check => write!(f, "{}", CHECK),
             SubCommand::Clean => write!(f, "{}", CLEAN),
             SubCommand::Install => write!(f, "{}", INSTALL),
+            SubCommand::Run => write!(f, "{}", RUN),
         }
     }
 }

@@ -1,5 +1,4 @@
 commands:
   build: cargo build
   release: nix build
-  test: cargo test
-  check: cargo clippy -- -D warnings
+  check: cargo test && cargo clippy -- -D warnings

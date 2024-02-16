@@ -36,7 +36,7 @@ fn run_subproject_command_nonexistent_directory_returns_subproject_not_found() {
 #[test]
 fn run_subproject_command_failing_test_returns_subproject_failed() {
     let dev_location = "tests/failing_subproject";
-    let res = dir_locker(|cwd| run_subproject_command(&SubCommand::Test, cwd, dev_location));
+    let res = dir_locker(|cwd| run_subproject_command(&SubCommand::Check, cwd, dev_location));
     assert_eq!(
         res.unwrap_err(),
         DevError::SubProjectFailed(dev_location.to_owned())
@@ -46,7 +46,7 @@ fn run_subproject_command_failing_test_returns_subproject_failed() {
 #[test]
 fn run_subproject_command_success_is_ok() {
     let res =
-        dir_locker(|cwd| run_subproject_command(&SubCommand::Test, cwd, "tests/pass_subproject"));
+        dir_locker(|cwd| run_subproject_command(&SubCommand::Check, cwd, "tests/pass_subproject"));
     assert_eq!(res, Ok(()),);
 }
 
@@ -54,7 +54,7 @@ fn run_subproject_command_success_is_ok() {
 fn process_command_can_run_subproject_commmands_success_is_ok() {
     let res = dir_locker(|_| {
         cd(Path::new("tests/with_subprojects")).unwrap();
-        process_command(&SubCommand::Test)
+        process_command(&SubCommand::Check)
     });
     assert_eq!(res, Ok(()));
 }
@@ -65,7 +65,7 @@ fn process_command_yml_error_when_no_commands_or_subprojects() {
     let res = dir_locker(|_| {
         cd(Path::new("tests/empty_dev")).unwrap();
         dir = cwd().unwrap().to_str().unwrap().to_owned();
-        process_command(&SubCommand::Test)
+        process_command(&SubCommand::Check)
     });
     assert_eq!(
         res,
