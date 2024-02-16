@@ -1,15 +1,9 @@
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus};
 
-use crate::command::{read_yaml, Commands};
+use crate::command::{read_yaml, Commands, UserCommand};
 use crate::filesystem::cwd;
 use crate::{command::SubCommand, err::DevError, filesystem::cd};
-
-fn read_command(cmd: &SubCommand, commands: Commands) -> Result<String, DevError> {
-    commands
-        .by_sub_command(cmd)
-        .ok_or(DevError::CommandUndefined(cmd.clone()))
-}
 
 fn run_command(command: &str) -> Result<ExitStatus, DevError> {
     Command::new("sh")
@@ -19,17 +13,13 @@ fn run_command(command: &str) -> Result<ExitStatus, DevError> {
         .map_err(|_| DevError::ProcessFailed)
 }
 
-pub fn run_project_command(sub_command: &SubCommand, commands: Commands) -> Result<(), DevError> {
+pub fn run_project_commands(sub_command: &SubCommand, commands: Commands) -> Result<(), DevError> {
     log::info!("run_project_command {:?}:{:?}", &sub_command, &commands);
-    read_command(sub_command, commands).and_then(|cmd| {
-        run_command(&cmd).and_then(|es| {
-            if es.success() {
-                Ok(())
-            } else {
-                Err(DevError::ProcessFailed)
-            }
-        })
-    })
+    match commands.by_sub_command(sub_command) {
+        UserCommand::None => Err(DevError::CommandUndefined(sub_command.clone())),
+        UserCommand::Command(cmd) => run_command(&cmd).map(|_| ()),
+        UserCommand::Commands(cmds) => cmds.iter().try_for_each(|cmd| run_command(cmd).map(|_| ())),
+    }
 }
 
 fn run_subprojects(command: &SubCommand, sub_projects: Vec<String>) -> Result<(), DevError> {
@@ -49,11 +39,11 @@ pub fn process_command(command: &SubCommand) -> Result<(), DevError> {
                 "{}, no tasks or subprojects present",
                 cwd()
                     .ok()
-                    .and_then(|path| path.to_str().map(|p| p.to_owned()))
+                    .and_then(|path| path.to_str().map(str::to_owned))
                     .unwrap_or("no directory found".to_string())
             ))),
-            (None, Some(commands)) => run_project_command(command, commands),
-            (Some(sp), Some(commands)) if sp.is_empty() => run_project_command(command, commands),
+            (None, Some(commands)) => run_project_commands(command, commands),
+            (Some(sp), Some(commands)) if sp.is_empty() => run_project_commands(command, commands),
             (Some(sp), _) => run_subprojects(command, sp),
         }
     })

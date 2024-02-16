@@ -1,0 +1,4 @@
+commands:
+  check:
+    - exit 0
+    - exit 0
