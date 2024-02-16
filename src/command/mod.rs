@@ -17,16 +17,36 @@ pub struct Root {
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct Commands {
-    build: Option<String>,
-    package: Option<String>,
-    check: Option<String>,
-    clean: Option<String>,
-    install: Option<String>,
-    run: Option<String>,
+    #[serde(default)]
+    build: UserCommand,
+    #[serde(default)]
+    package: UserCommand,
+    #[serde(default)]
+    check: UserCommand,
+    #[serde(default)]
+    clean: UserCommand,
+    #[serde(default)]
+    install: UserCommand,
+    #[serde(default)]
+    run: UserCommand,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[serde(untagged)]
+pub enum UserCommand {
+    None,
+    Command(String),
+    Commands(Vec<String>),
+}
+
+impl Default for UserCommand {
+    fn default() -> Self {
+        Self::None
+    }
 }
 
 impl Commands {
-    pub fn by_sub_command(self, sub_command: &SubCommand) -> Option<String> {
+    pub fn by_sub_command(self, sub_command: &SubCommand) -> UserCommand {
         match *sub_command {
             SubCommand::Build => self.build,
             SubCommand::Package => self.package,
@@ -123,7 +143,10 @@ mod tests {
         fn read_sub_command_from_yaml(subject in any::<SubCommand>()) {
             let result = "real command";
             let res: Root = serde_yaml::from_str(&format!("commands:\n  {}: {}\n", subject, result)).unwrap();
-            assert_eq!(res.commands.unwrap().by_sub_command(&subject), Some(result.to_owned()));
+            assert_eq!(
+                res.commands.unwrap().by_sub_command(&subject),
+                UserCommand::Command(result.to_owned()),
+            );
         }
 
     }

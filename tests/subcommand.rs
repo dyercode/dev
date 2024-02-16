@@ -51,6 +51,14 @@ fn run_subproject_command_success_is_ok() {
 }
 
 #[test]
+fn run_multitask_command_successes_is_ok() {
+    let res = dir_locker(|cwd| {
+        run_subproject_command(&SubCommand::Check, cwd, "tests/multitask_subproject")
+    });
+    assert_eq!(res, Ok(()),);
+}
+
+#[test]
 fn process_command_can_run_subproject_commmands_success_is_ok() {
     let res = dir_locker(|_| {
         cd(Path::new("tests/with_subprojects")).unwrap();
