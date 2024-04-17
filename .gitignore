@@ -3,3 +3,4 @@
 dev
 .direnv
 result
+cobertura.xml
