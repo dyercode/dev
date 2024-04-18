@@ -23,7 +23,7 @@ jobs:
       - name:                   Upload to codecov.io
         uses:                   codecov/codecov-action@v2
         with:
-          # token:                ${{secrets.CODECOV_TOKEN}} # not required for public repos
+          token:                ${{secrets.CODECOV_TOKEN}} # not required for public repos # except (silently? at least they don't mention it in other peoples issues) this was broken/changed
           fail_ci_if_error:     true
           files: cobertura.xml
 
