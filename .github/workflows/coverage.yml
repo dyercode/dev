@@ -23,11 +23,7 @@ jobs:
       - name:                   Upload to codecov.io
         uses:                   codecov/codecov-action@v2
         with:
-<<<<<<< HEAD
-          token:                ${{secrets.CODECOV_TOKEN}} # not required for public repos # except (silently? at least they don't mention it in other peoples issues) this was broken/changed
-=======
           token:                ${{secrets.CODECOV_TOKEN}} # not required for public repos # except they're having github api rate issues I guess
->>>>>>> baec92c (fix coveerage mabye.)
           fail_ci_if_error:     true
           files: cobertura.xml
 
