@@ -108,7 +108,10 @@
             my-crate-fmt = craneLib.cargoFmt { inherit src; };
 
             # Audit dependencies
-            my-crate-audit = craneLib.cargoAudit { inherit src advisory-db; };
+            my-crate-audit = craneLib.cargoAudit {
+              inherit src advisory-db;
+              cargoAuditExtraArgs = "--deny warnings";
+            };
 
             # Run tests with cargo-nextest
             # Consider setting `doCheck = false` on `my-crate` if you do not want

@@ -4,3 +4,4 @@ commands:
   check:
     - cargo test
     - cargo clippy -- -D warnings
+    - cargo audit --deny warnings
