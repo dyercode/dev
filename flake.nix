@@ -36,11 +36,11 @@
     flake-utils.lib.eachDefaultSystem (
       system:
       let
-        pkgs = import nixpkgs { inherit system; };
+        pkgs = nixpkgs.legacyPackages.${system};
 
         inherit (pkgs) lib;
 
-        craneLib = crane.lib.${system};
+        craneLib = (crane.mkLib nixpkgs.legacyPackages.${system});
         ymlFilter = path: _type: builtins.match ".*yml$" path != null;
         ymlOrCargo = path: type: (ymlFilter path type) || (craneLib.filterCargoSources path type);
         src = craneLib.cleanCargoSource (craneLib.path ./.);
