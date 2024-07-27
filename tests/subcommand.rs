@@ -72,7 +72,7 @@ fn process_command_yml_error_when_no_commands_or_subprojects() {
     let mut dir: String = "".to_string();
     let res = dir_locker(|_| {
         cd(Path::new("tests/empty_dev")).unwrap();
-        dir = cwd().unwrap().to_str().unwrap().to_owned();
+        cwd().unwrap().to_str().unwrap().clone_into(&mut dir);
         process_command(&SubCommand::Check)
     });
     assert_eq!(
