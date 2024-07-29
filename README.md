@@ -3,6 +3,7 @@ small tool to standardize builds across projects.
 
 [![Rust](https://github.com/dyercode/dev/actions/workflows/rust.yml/badge.svg)](https://github.com/dyercode/dev/actions/workflows/rust.yml)
 [![codecov](https://codecov.io/gh/dyercode/dev/graph/badge.svg?token=33O0K6O876)](https://codecov.io/gh/dyercode/dev)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/{owner}/{repo}/badge)](https://scorecard.dev/viewer/?uri=github.com/{owner}/{repo})
 
 write up a small dev.yml file in the directory you want to build from with the commands to run.
 
