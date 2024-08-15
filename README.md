@@ -10,3 +10,24 @@ write up a small dev.yml file in the directory you want to build from with the c
 Very few options/configurations are supported, or planned. Which commands are available, watchers, nested/multi-project, and environments specifications are currently the only things under consideration.
 
 Currently only works in environments with `sh` because of a shortcut I took to avoid parsing arguments just so they could be re-added as arguments with rust's Command implementation.
+
+Example flake:
+```nix
+{
+  inputs = {
+    dev.url = "github:dyercode/dev";
+  };
+
+  outputs =
+    { self, dev, nixpkgs }:
+    let
+      pkgs = nixpkgs.legacyPackages.${system};
+      system = "linux-x86_64";
+    in
+    {
+      devShells.default = pkgs.mkShell {
+        nativeBuildInputs = [ dev.packages.${system}.default ];
+      };
+    };
+}
+```
