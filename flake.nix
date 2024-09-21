@@ -40,7 +40,7 @@
 
         inherit (pkgs) lib;
 
-        craneLib = (crane.mkLib nixpkgs.legacyPackages.${system});
+        craneLib = (crane.mkLib pkgs);
         ymlFilter = path: _type: builtins.match ".*yml$" path != null;
         ymlOrCargo = path: type: (ymlFilter path type) || (craneLib.filterCargoSources path type);
         src = craneLib.cleanCargoSource (craneLib.path ./.);
