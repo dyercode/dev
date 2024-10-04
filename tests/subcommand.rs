@@ -44,6 +44,7 @@ fn run_subproject_command_failing_test_returns_subproject_failed() {
 }
 
 #[test]
+#[cfg_attr(miri, ignore)]
 fn run_subproject_command_success_is_ok() {
     let res =
         dir_locker(|cwd| run_subproject_command(&SubCommand::Check, cwd, "tests/pass_subproject"));
@@ -51,6 +52,7 @@ fn run_subproject_command_success_is_ok() {
 }
 
 #[test]
+#[cfg_attr(miri, ignore)]
 fn run_multitask_command_successes_is_ok() {
     let res = dir_locker(|cwd| {
         run_subproject_command(&SubCommand::Check, cwd, "tests/multitask_subproject")
@@ -59,6 +61,7 @@ fn run_multitask_command_successes_is_ok() {
 }
 
 #[test]
+#[cfg_attr(miri, ignore)]
 fn process_command_can_run_subproject_commmands_success_is_ok() {
     let res = dir_locker(|_| {
         cd(Path::new("tests/with_subprojects")).unwrap();

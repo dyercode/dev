@@ -37,10 +37,11 @@
       system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
+        # packages.${system}.default = fenix.packages.${system};
 
         inherit (pkgs) lib;
 
-        craneLib = (crane.mkLib pkgs);
+        craneLib = (crane.mkLib pkgs).overrideToolchain my-toolchain;
         ymlFilter = path: _type: builtins.match ".*yml$" path != null;
         ymlOrCargo = path: type: (ymlFilter path type) || (craneLib.filterCargoSources path type);
         src = craneLib.cleanCargoSource (craneLib.path ./.);
@@ -66,13 +67,22 @@
           # MY_CUSTOM_VAR = "some value";
         };
 
-        craneLibLLvmTools = craneLib.overrideToolchain (
-          fenix.packages.${system}.complete.withComponents [
+        my-toolchain = (
+          fenix.packages.${system}.latest.withComponents [
             "cargo"
             "llvm-tools"
+            "clippy"
             "rustc"
+            "miri"
           ]
+          # fromToolchainFile
+          # {
+          # file = ./rust-toolchain.toml;
+          # sha256 = "sha256-R4uGEL5K0/q018tbjosdKZ72Gqe6SJK74A58lOMl+Lc=";
+          # }
         );
+
+        craneLibLLvmTools = craneLib;
 
         # Build *just* the cargo dependencies, so we can reuse
         # all of that work (e.g. via cachix) when running in CI
@@ -83,6 +93,7 @@
         my-crate = craneLib.buildPackage (commonArgs // { inherit cargoArtifacts; });
       in
       {
+
         checks =
           {
             # Build the crate as part of `nix flake check` for convenience
@@ -150,11 +161,13 @@
             pkgs.sccache
             self.packages.${system}.default
             pkgs.cargo-edit
+            pkgs.cargo-udeps
           ];
 
           shellHook = ''
             export RUSTC_WRAPPER=sccache
             export RUST_LOG=info
+            export MIRIFLAGS='-Zmiri-disable-isolation'
           '';
         };
       }
