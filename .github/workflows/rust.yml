@@ -13,3 +13,6 @@ jobs:
         github_access_token: ${{ secrets.GITHUB_TOKEN }}
     - run: nix build
     - run: nix flake check
+    # Run Rudra
+    - name: Rudra
+      uses: sslab-gatech/Rudra@master
