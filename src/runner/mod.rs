@@ -1,24 +1,30 @@
 use std::path::{Path, PathBuf};
-use std::process::{Command, ExitStatus};
+use std::process::Command;
 
 use crate::command::{read_yaml, Commands, UserCommand};
 use crate::filesystem::cwd;
 use crate::{command::SubCommand, err::DevError, filesystem::cd};
 
-fn run_command(command: &str) -> Result<ExitStatus, DevError> {
-    Command::new("sh")
-        .arg("-c")
-        .arg(command)
-        .status()
-        .map_err(|_| DevError::ProcessFailed)
+fn run_command(command: &str) -> Result<(), DevError> {
+    match Command::new("sh").arg("-c").arg(command).status() {
+        Ok(status) => match status.code() {
+            Some(0) => Ok(()),
+            Some(_) => Err(DevError::ProcessFailed),
+            None => unreachable!("this is how you make no status code"),
+        },
+        Err(err) => unreachable!(
+            "the method to make sh actually fail turns out to be: {:?}",
+            err
+        ),
+    }
 }
 
 pub fn run_project_commands(sub_command: &SubCommand, commands: Commands) -> Result<(), DevError> {
     log::info!("run_project_command {:?}:{:?}", &sub_command, &commands);
     match commands.by_sub_command(sub_command) {
         UserCommand::None => Err(DevError::CommandUndefined(sub_command.clone())),
-        UserCommand::Command(cmd) => run_command(&cmd).map(|_| ()),
-        UserCommand::Commands(cmds) => cmds.iter().try_for_each(|cmd| run_command(cmd).map(|_| ())),
+        UserCommand::Command(cmd) => run_command(&cmd),
+        UserCommand::Commands(cmds) => cmds.iter().try_for_each(|cmd| run_command(cmd)),
     }
 }
 

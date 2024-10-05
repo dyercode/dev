@@ -71,6 +71,16 @@ fn process_command_can_run_subproject_commmands_success_is_ok() {
 }
 
 #[test]
+#[cfg_attr(miri, ignore)]
+fn process_command_end_on_first_failure() {
+    let res = dir_locker(|_| {
+        cd(Path::new("tests/multitask_early_failure")).unwrap();
+        process_command(&SubCommand::Check)
+    });
+    assert_eq!(res, Err(DevError::ProcessFailed));
+}
+
+#[test]
 fn process_command_yml_error_when_no_commands_or_subprojects() {
     let mut dir: String = "".to_string();
     let res = dir_locker(|_| {
