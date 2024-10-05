@@ -32,7 +32,9 @@ fn run_subprojects(command: &SubCommand, sub_projects: Vec<String>) -> Result<()
 
 pub fn process_command(command: &SubCommand) -> Result<(), DevError> {
     log::info!("processing command");
-    read_yaml().and_then(|root| {
+    // todo - put this somewhere better
+    let dev_path = Path::new("./dev.yml");
+    read_yaml(dev_path).and_then(|root| {
         log::info!("config: {:?}", &root);
         match (root.subprojects, root.commands) {
             (None, None) => Err(DevError::YmlProblem(format!(

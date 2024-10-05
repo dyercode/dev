@@ -105,8 +105,7 @@ impl Display for SubCommand {
     }
 }
 
-pub fn read_yaml() -> Result<Root, DevError> {
-    let file_path = Path::new("./dev.yml");
+pub fn read_yaml(file_path: &Path) -> Result<Root, DevError> {
     if file_path.exists() {
         let raw = fs::read_to_string(file_path).map_err(|_| DevError::FileUnreadable)?;
         let parsed: Result<Root, serde_yaml::Error> = serde_yaml::from_str(&raw);
@@ -148,11 +147,27 @@ mod tests {
                 UserCommand::Command(result.to_owned()),
             );
         }
-
     }
 
     #[test]
     fn sub_command_errors_when_unknown_string() {
         assert_eq!("fish".parse::<SubCommand>(), Err(()));
+    }
+
+    #[test]
+    fn read_yaml_returns_dev_error_when_file_not_found() {
+        assert_eq!(
+            Err(DevError::FileNotFound),
+            read_yaml(Path::new("./scroobledoobledoo"))
+        )
+    }
+
+    #[test]
+    fn read_yaml_returns_err_when_bad_yaml() {
+        let result = read_yaml(Path::new("./tests/bad_yaml/dev.yml"));
+        match result {
+            Ok(_) => panic!("was read successfully?"),
+            Err(e) => assert!(matches!(e, DevError::YmlProblem { .. })),
+        }
     }
 }
