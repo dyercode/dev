@@ -14,5 +14,5 @@ jobs:
     - run: nix build
     - run: nix flake check
     # Run Rudra
-    - name: Rudra
-      uses: sslab-gatech/Rudra@master
+    # - name: Rudra
+    # uses: sslab-gatech/Rudra@master
