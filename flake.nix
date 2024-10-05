@@ -74,6 +74,7 @@
             "clippy"
             "rustc"
             "miri"
+            "rustfmt"
           ]
           # fromToolchainFile
           # {
