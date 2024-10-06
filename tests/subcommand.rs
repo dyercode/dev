@@ -81,6 +81,16 @@ fn process_command_end_on_first_failure() {
 }
 
 #[test]
+#[cfg_attr(miri, ignore)]
+fn process_command_rus_root_project_command_when_subprojects_empty() {
+    let res = dir_locker(|_| {
+        cd(Path::new("tests/empty_subprojects")).unwrap();
+        process_command(&SubCommand::Check)
+    });
+    assert_eq!(res, Err(DevError::ProcessFailed));
+}
+
+#[test]
 fn process_command_yml_error_when_no_commands_or_subprojects() {
     let mut dir: String = "".to_string();
     let res = dir_locker(|_| {
