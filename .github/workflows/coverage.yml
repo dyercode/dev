@@ -1,7 +1,10 @@
 name:                           coverage
 permissions: read-all
 
-on:                             [push]
+on:
+  push:
+    branches:
+      - main
 jobs:
   test:
     name:                       coverage
