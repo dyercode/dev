@@ -38,7 +38,7 @@
 
         inherit (pkgs) lib;
 
-        craneLib = (crane.mkLib pkgs).overrideToolchain my-toolchain;
+        craneLib = (crane.mkLib pkgs).overrideToolchain nightly-toolchain;
         ymlFilter = path: _type: builtins.match ".*yml$" path != null;
         ymlOrCargo = path: type: (ymlFilter path type) || (craneLib.filterCargoSources path type);
         src = craneLib.cleanCargoSource (craneLib.path ./.);
@@ -64,21 +64,17 @@
           # MY_CUSTOM_VAR = "some value";
         };
 
-        my-toolchain = (
-          fenix.packages.${system}.latest.withComponents [
-            "cargo"
-            "llvm-tools"
-            "clippy"
-            "rustc"
-            "miri"
-            "rustfmt"
-          ]
-          # fromToolchainFile
-          # {
-          # file = ./rust-toolchain.toml;
-          # sha256 = "sha256-R4uGEL5K0/q018tbjosdKZ72Gqe6SJK74A58lOMl+Lc=";
-          # }
-        );
+        my-components = [
+          "cargo"
+          "llvm-tools"
+          "clippy"
+          "rustc"
+          "miri"
+          "rustfmt"
+        ];
+
+        stable-toolchain = (fenix.packages.${system}.default my-components);
+        nightly-toolchain = (fenix.packages.${system}.latest.withComponents my-components);
 
         craneLibLLvmTools = craneLib;
 
