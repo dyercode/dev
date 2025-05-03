@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use crate::command::{read_yaml, Commands, UserCommand};
+use crate::command::{Commands, UserCommand, read_yaml};
 use crate::filesystem::cwd;
 use crate::{command::SubCommand, err::DevError, filesystem::cd};
 
