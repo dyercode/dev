@@ -16,7 +16,7 @@ fn main() -> ExitCode {
     match process_command(&my_command.command) {
         Ok(()) => ExitCode::SUCCESS,
         Err(e) => {
-            eprintln!("{}", e);
+            eprintln!("{e}");
             ExitCode::FAILURE
         }
     }

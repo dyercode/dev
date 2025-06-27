@@ -95,12 +95,12 @@ impl FromStr for SubCommand {
 impl Display for SubCommand {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match *self {
-            SubCommand::Build => write!(f, "{}", BUILD),
-            SubCommand::Package => write!(f, "{}", PACKAGE),
-            SubCommand::Check => write!(f, "{}", CHECK),
-            SubCommand::Clean => write!(f, "{}", CLEAN),
-            SubCommand::Install => write!(f, "{}", INSTALL),
-            SubCommand::Run => write!(f, "{}", RUN),
+            SubCommand::Build => write!(f, "{BUILD}"),
+            SubCommand::Package => write!(f, "{PACKAGE}"),
+            SubCommand::Check => write!(f, "{CHECK}"),
+            SubCommand::Clean => write!(f, "{CLEAN}"),
+            SubCommand::Install => write!(f, "{INSTALL}"),
+            SubCommand::Run => write!(f, "{RUN}"),
         }
     }
 }
