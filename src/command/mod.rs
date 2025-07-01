@@ -141,7 +141,7 @@ mod tests {
         #[test]
         fn read_sub_command_from_yaml(subject in any::<SubCommand>()) {
             let result = "real command";
-            let res: Root = serde_yaml::from_str(&format!("commands:\n  {}: {}\n", subject, result)).unwrap();
+            let res: Root = serde_yaml::from_str(&format!("commands:\n  {subject}: {result}\n")).unwrap();
             assert_eq!(
                 res.commands.unwrap().by_sub_command(&subject),
                 UserCommand::Command(result.to_owned()),

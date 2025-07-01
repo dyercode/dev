@@ -101,8 +101,7 @@ fn process_command_yml_error_when_no_commands_or_subprojects() {
     assert_eq!(
         res,
         Err(DevError::YmlProblem(format!(
-            "{}, no tasks or subprojects present",
-            dir
+            "{dir}, no tasks or subprojects present"
         )))
     );
 }

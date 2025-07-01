@@ -34,7 +34,6 @@
       system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-        # packages.${system}.default = fenix.packages.${system};
 
         inherit (pkgs) lib;
 
@@ -156,6 +155,7 @@
             self.packages.${system}.default
             pkgs.cargo-edit
             pkgs.cargo-udeps
+            pkgs.rust-analyzer
           ];
 
           shellHook = ''
