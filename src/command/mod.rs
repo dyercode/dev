@@ -31,18 +31,13 @@ pub struct Commands {
     run: UserCommand,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Default, Serialize, Deserialize, Debug, PartialEq)]
 #[serde(untagged)]
 pub enum UserCommand {
+    #[default]
     None,
     Command(String),
     Commands(Vec<String>),
-}
-
-impl Default for UserCommand {
-    fn default() -> Self {
-        Self::None
-    }
 }
 
 impl Commands {
