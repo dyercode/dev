@@ -4,3 +4,4 @@ dev
 .direnv
 result
 cobertura.xml
+tarpaulin-report.html

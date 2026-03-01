@@ -1,0 +1,2 @@
+commands:
+  - build: "echo 1"

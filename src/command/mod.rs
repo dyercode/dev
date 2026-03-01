@@ -103,14 +103,21 @@ impl Display for SubCommand {
 pub fn read_yaml(file_path: &Path) -> Result<Root, DevError> {
     if file_path.exists() {
         let raw = fs::read_to_string(file_path).map_err(|_| DevError::FileUnreadable)?;
-        let parsed: Result<Root, serde_yaml::Error> = serde_yaml::from_str(&raw);
+        let parsed: Result<Root, serde_saphyr::Error> = serde_saphyr::from_str(&raw);
         match parsed {
             Ok(root) => Ok(root),
-            Err(_) => {
-                let cwd = cwd();
-                Err(DevError::YmlProblem(
-                    cwd?.to_str().unwrap_or_default().to_owned(),
-                ))
+            Err(err) => {
+                let cwd = cwd()?.to_str().unwrap_or_default().to_owned();
+                log::debug!("Full Error:\n{err:?}");
+                match err.location() {
+                    Some(location) => Err(DevError::YmlProblem(format!(
+                        "{}:{},{}",
+                        cwd,
+                        location.line(),
+                        location.column(),
+                    ))),
+                    _ => Err(DevError::YmlProblem(cwd)),
+                }
             }
         }
     } else {
@@ -136,7 +143,7 @@ mod tests {
         #[test]
         fn read_sub_command_from_yaml(subject in any::<SubCommand>()) {
             let result = "real command";
-            let res: Root = serde_yaml::from_str(&format!("commands:\n  {subject}: {result}\n")).unwrap();
+            let res: Root = serde_saphyr::from_str(&format!("commands:\n  {subject}: {result}\n")).unwrap();
             assert_eq!(
                 res.commands.unwrap().by_sub_command(&subject),
                 UserCommand::Command(result.to_owned()),
@@ -163,6 +170,18 @@ mod tests {
         match result {
             Ok(_) => panic!("was read successfully?"),
             Err(e) => assert!(matches!(e, DevError::YmlProblem { .. })),
+        }
+    }
+
+    #[test]
+    fn read_yaml_gives_location_information_when_possible() {
+        let result = read_yaml(Path::new("./tests/wrong_subcommand_structure/dev.yml"));
+        match result {
+            Ok(_) => panic!("was read successfully?"),
+            Err(DevError::YmlProblem(e)) => {
+                assert!(e.ends_with(":2,3"), "ends with error position")
+            }
+            Err(_) => panic!("wrong error"),
         }
     }
 }
